@@ -28,6 +28,7 @@ public:
     processPriority         priority;
     std::string             info;
     std::string             name;
+    ProcessControlBlock*    previous;
     ProcessControlBlock*    next;
     /*Data structures to implement pcb creation tree.*/
     /*===================================================*/
@@ -49,17 +50,33 @@ public:
     /*A linked list storing all resources occupied by this process.*/
     ResourceList            resourceList;
 public:
-    ProcessControlBlock();
+    ProcessControlBlock(int _processID, int _parentID, int _userID, processState _state,
+                        processPriority _priority, std::string info, std::string name,
+                        ProcessControlBlock _parent);
     ~ProcessControlBlock();
 
 };
 
+/**
+ * The first and last nodes store no node but indicate the head and tail merely.
+ */
 class ProcessControlBlockList {
 public:
     ProcessControlBlock*        head;
     ProcessControlBlock*        tail;
-    ProcessControlBlockList*    next;
+    ProcessControlBlockList*    next;   // Unused
     int                         length;
+public:
+    ProcessControlBlockList();
+    ~ProcessControlBlockList();
+    // Insert a node into the end of the list
+    int     append(ProcessControlBlock* _node);
+    // Insert a node into the head of the list
+    int     insert(ProcessControlBlock* _node);
+    ProcessControlBlock*    getHead();
+    ProcessControlBlock*    popHead();
+    ProcessControlBlock*    getTail();
+    ProcessControlBlock*    popTail();
 };
 
 #endif //OS_EXPR_PROCESSCONTROLBLOCK_H

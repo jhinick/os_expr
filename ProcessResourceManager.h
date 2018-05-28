@@ -21,7 +21,7 @@ public:
      * and can never be blocked.*/
     int init();
     int process_create();
-    int process_destory();
+    int process_destroy();
 
 };
 

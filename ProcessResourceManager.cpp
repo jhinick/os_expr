@@ -19,5 +19,7 @@ ProcessResourceManager::~ProcessResourceManager() {
  * @return return negative on error.
  */
 int ProcessResourceManager::init() {
-
+    /**
+     * todo:1.launch init process
+     */
 }
