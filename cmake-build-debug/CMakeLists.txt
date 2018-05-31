@@ -1,0 +1,5 @@
+project(main)
+cmake_minimum_required(VERSION 3.10.3)
+aux_source_directory(./.. srcdir)
+set(CMAKE_CXX_STANDARD 11)
+add_executable(main ${srcdir})
