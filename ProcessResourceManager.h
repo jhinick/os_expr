@@ -45,7 +45,9 @@ public:
     int getProcessID(); /* Return the smallest available id in the id pool, return -1 on error.*/
     int process_create(int _parentID, int _userID, processState _state, processPriority _priority,
                         std::string info, std::string name);
-    int process_destroy();
+    void listProcessByPid(int _processId);
+    int printProcessInfo();
+    int printProcessFullInfo();
 
 };
 

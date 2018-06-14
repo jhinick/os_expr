@@ -5,6 +5,8 @@
 #ifndef RESOURCE_H
 #define RESOURCE_H
 
+#include <vector>
+
 class ProcessControlBlockList;
 /**
  * Every resource is identified by a unique int number.
@@ -30,9 +32,7 @@ public:
 
 class ResourceList {
 public:
-    Resource*      head;
-    Resource*      tail;
-    int            length;
+    std::vector<Resource> ResouceList;
 public:
     ResourceList();
     ~ResourceList();

@@ -30,9 +30,13 @@ ProcessControlBlock::ProcessControlBlock(int _processID, int _parentID, int _use
 
 ProcessControlBlock::~ProcessControlBlock() = default;
 
+void ProcessControlBlock::printInfo() {
+    std::cout << "ID: " << this->processID << "\t";
+    std::cout << "State: " << this->state << "\t";
+    std::cout << "Name: " << this->name << std::endl;
+}
 
-
-void const ProcessControlBlock::printInfo(){
+void ProcessControlBlock::printFullInfo(){
     printf("Process %d info:\n", this->processID);
     std::cout << "Process ID:" << this->processID << std::endl;
     std::cout << "Parent ID:" << this->parentID << std::endl;
@@ -47,8 +51,8 @@ void const ProcessControlBlock::printInfo(){
 /*====================ProcessControlBlockList=============================*/
 
 ProcessControlBlockList::ProcessControlBlockList() {
-    this->head = (ProcessControlBlock*)(sizeof(ProcessControlBlock));
-    this->tail = (ProcessControlBlock*)(sizeof(ProcessControlBlock));
+    this->head = (ProcessControlBlock*)malloc(sizeof(ProcessControlBlock));
+    this->tail = (ProcessControlBlock*)malloc(sizeof(ProcessControlBlock));
     this->head->previous = nullptr;
     this->head->next = this->tail;
     this->tail->previous = this->head;
@@ -71,6 +75,7 @@ int ProcessControlBlockList::insert(ProcessControlBlock* _node) {
     _node->next = this->head->next;
     this->head->next->previous = _node;
     this->head->next = _node;
+    this->length++;
     return 0;
 }
 
@@ -112,17 +117,46 @@ ProcessControlBlock* ProcessControlBlockList::popLast(){
     }
 }
 
-void const ProcessControlBlockList::printInfo() {
+int ProcessControlBlockList::printInfo() {
     if (this->length == 0) {
-        std::cout << "The list is empty." << std::endl;
-    } else {
-        std::cout << "The info of this list:" << std::endl;
+        return -1;
     }
     ProcessControlBlock* temp = this->head->next;
     for (int i = 0; i < this->length; i++) {
         temp->printInfo();
         temp = temp->next;
     }
+    return 0;
+}
+
+int ProcessControlBlockList::printFullInfo(){
+    if (this->length == 0) {
+        return -1;
+    }
+    ProcessControlBlock* temp = this->head->next;
+    for (int i = 0; i < this->length; i++) {
+        temp->printFullInfo();
+        temp = temp->next;
+    }
+    return 0;
+}
+
+ProcessControlBlock* ProcessControlBlockList::getByPid(int _processId) {
+    ProcessControlBlock* ret = this->head->next;
+    while (ret != this->tail) {
+        if (ret->processID == _processId)
+            return ret;
+    }
+    return nullptr;
+}
+
+ProcessControlBlock* ProcessControlBlockList::getByName(std::string _processName) {
+    ProcessControlBlock* ret = this->head->next;
+    while (ret != this->tail) {
+        if (ret->name == _processName)
+            return ret;
+    }
+    return nullptr;
 }
 
 

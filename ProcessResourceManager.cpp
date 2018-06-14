@@ -48,4 +48,26 @@ int ProcessResourceManager::getProcessID(){
 }
 
 int ProcessResourceManager::process_create(int _parentID, int _userID, processState _state, processPriority _priority,
-                                           std::string info, std::string name) {}
+                                           std::string info, std::string name) {};
+
+void ProcessResourceManager::listProcessByPid(int _processId) {
+
+}
+
+
+int ProcessResourceManager::printProcessInfo() {
+    for (int i = 0; i < PROCESS_STATE_NUM; i++) {
+        for (int j = 0; j < PRIOR_LEVEL_NUM; j++) {
+            this->list[i][j].printInfo();
+        }
+    }
+}
+
+int ProcessResourceManager::printProcessFullInfo() {
+    for (int i = 0; i < PROCESS_STATE_NUM; i++) {
+        for (int j = 0; j < PRIOR_LEVEL_NUM; j++) {
+            this->list[i][j].printFullInfo();
+        }
+    }
+}
+

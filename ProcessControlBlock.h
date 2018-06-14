@@ -46,8 +46,8 @@ public:
 public:
     ProcessControlBlock(int _processID, int _parentID, int _userID, processState _state, processPriority _priority, std::string info, std::string name);
     ~ProcessControlBlock();
-    void const printInfo();
-
+    void printInfo();
+    void printFullInfo();
 };
 
 /**
@@ -73,7 +73,11 @@ public:
     ProcessControlBlock*    getLast();
     /* Return the last node and remove it from the lis, nullptr on error.*/
     ProcessControlBlock*    popLast();
-    void const printInfo();
+    ProcessControlBlock* getByPid(int _processId);
+    ProcessControlBlock* getByName(std::string _processName);
+    /* Return -1 when the list is empty.*/
+    int printInfo();
+    int printFullInfo();
 };
 
 

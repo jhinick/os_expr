@@ -2,18 +2,20 @@
 // Created by hjh on 18-5-28.
 //
 
-
+#include "Resource.h"
+#include "ProcessControlBlock.h"
+#include "ProcessResourceManager.h"
+#include "UserInterface.h"
 
 #include <cstdio>
 
-#define TESTPROCESSCONTROLBLOCK
-#ifdef TESTPROCESSCONTROLBLOCK
 
 
 
 int main(int argc, char** argv) {
-    printf("success.\n");
+    ProcessResourceManager processResourceManager;
+    UserInterface userInterface = UserInterface(&processResourceManager);
+    userInterface.run();
     return 0;
 }
-#endif
 
