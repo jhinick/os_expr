@@ -34,10 +34,10 @@ ProcessResourceManager::~ProcessResourceManager() = default;
  * should always be in ready list.
  * @return return -1 on error.
  */
-int ProcessResourceManager::init() {
-    ProcessControlBlock* temp = new ProcessControlBlock(this->getProcessID(), 0, SYS_UID, System, "Init");
+int ProcessResourceManager::initialize(){
+    this->init= new ProcessControlBlock(this->getProcessID(), 0, SYS_UID, System, "Init");
     /* set init as current process.*/
-    setCurrent(temp);
+    setCurrent(init);
     return 0;
 }
 
@@ -50,14 +50,6 @@ int ProcessResourceManager::getProcessID(){
     }
     return Error::NO_PROCESS_ID_AVAILABLE;
 }
-
-int ProcessResourceManager::process_create(int _parentID, int _userID, processState _state, processPriority _priority,
-                                           std::string info, std::string name) {};
-
-void ProcessResourceManager::listProcessByPid(int _processId) {
-
-}
-
 
 int ProcessResourceManager::printProcessInfo() {
     this->current->printInfo();
@@ -106,6 +98,10 @@ int ProcessResourceManager::createProcess(std::string _name, processPriority _pr
     }
     ProcessControlBlock* temp = new ProcessControlBlock(pid, this->current->processID, 0, _processPriority, _name);
     this->list[Ready][_processPriority].append(temp);
+    /* complete its parent, child and brother info.*/
+    /* its parent should be current process */
+    temp->parent = this->current;
+    temp->parent->addChild(temp);
     return 0;
 }
 
@@ -126,11 +122,10 @@ int ProcessResourceManager::killProcess(std::string _name) {
     }
 }
 
-
 int ProcessResourceManager::killProcess(int _processID) {
     int ret = Error::UNKNOWN_ERROR;
     if (this->current->processID == _processID) {
-        // todo: schedule and
+        // todo: when you want to kill current process
         return ret;
     } else {
         for (int state = 0; state < PROCESS_STATE_NUM; state++) {
@@ -144,4 +139,29 @@ int ProcessResourceManager::killProcess(int _processID) {
         }
         return Error::PROCESS_NOT_FOUND;
     }
+}
+
+int ProcessResourceManager::schdule(schdule_algorithm _schdule_algorithm, processState _processState) {
+    /* Put the PCB to the right list, if the process is init, don't do that.*/
+    // todo :append or not?
+    this->current->state = _processState;
+    if (this->current != this->init) {
+        this->list[_processState][this->current->priority].append(this->current);
+    }
+    /* Use get_next() to get the next process to run*/
+    ProcessControlBlock* next = nullptr;
+    if ((next = this->list[Ready][System].getNext(_schdule_algorithm)) != nullptr) {
+        this->setCurrent(next);
+        return 0;
+    }
+    if ((next = this->list[Ready][User].getNext(_schdule_algorithm)) != nullptr) {
+        this->setCurrent(next);
+        return 0;
+    }
+    next = this->init;
+    this->setCurrent(next);
+}
+
+int ProcessResourceManager::clockInterrupt(schdule_algorithm _schdule_algorithm) {
+    this->schdule(_schdule_algorithm, Ready);
 }

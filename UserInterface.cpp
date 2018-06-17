@@ -30,14 +30,13 @@ void UserInterface::run() {
     /* initialize the system*/
     this->init();
     /* A infinite loop to get user command*/
-    int i = 0;
     while (true) {
         char* cmd = nullptr;
         size_t len = 128;
-        std::cout << "%" << this->processResourceManager->current->name << "%";
+        std::cout << "%" << this->processResourceManager->current->name << "% ";
         getline(&cmd, &len, stdin);
         cmd[strlen(cmd) - 1] = '\0';        // change the terminate char to
-        int runState = runCommand(cmd);
+        runCommand(cmd);
     }
 }
 
@@ -128,26 +127,25 @@ int UserInterface::runCommand(char* _cmd) {
      *  cr -n processName               ; create a process with default (User) priority
      *  cr -n processName -p priority   ; create a process with specified priority, priority
      *                                    can be "System" "system" or "User" "user"
-     *  kill processID                 ; kill a process by pid
+     *  kill processID                  ; kill a process by pid
      *  kill -n processName             ; kill a process by name
-     *  ccp processID                  ; change current process
+     *  ccp processID                   ; change current process
      *  ccp -n processName              ; change current process by name
      *  ls                              ; list all processes' name, pid and state
      *  ls -l                           ; list all processes' full information
      *  exit or Exit                    ; terminate the system
      *  h or help                       ; print help info
      *  i                               ; interrupt for scheduler
+     *  i scheduleAlgorithm             ; schedule in fifo mode
      * */
 
     /* cr -n processName */
     if (tokens.size() == 3 && strcmp(tokens[0], "cr") == 0 && strcmp(tokens[1], "-n") == 0) {
         this->processResourceManager->createProcess(tokens[2]);
         return 0;
-        // todo: check return value
     }
     /* cr -n processName -p priority */
     if (tokens.size() == 5 && strcmp(tokens[0], "cr") == 0 && strcmp(tokens[1], "-n") == 0 && strcmp(tokens[3], "-p") == 0) {
-        processPriority priority = User;
         if (strcmp(tokens[4], "System") == 0 ||strcmp(tokens[4], "system") == 0 ) {
             this->processResourceManager->createProcess(tokens[2], System);
             return 0;
@@ -177,20 +175,36 @@ int UserInterface::runCommand(char* _cmd) {
         this->processResourceManager->printProcessInfo();
         return 0;
     }
+    /* ls -l */
     if (tokens.size() == 2 && strcmp(tokens[0], "ls") == 0 && strcmp(tokens[1], "-l") == 0) {
         this->processResourceManager->printProcessFullInfo();
         return 0;
     }
+    /* exit */
     if (strcmp(_cmd, "exit") == 0 || strcmp(_cmd, "Exit") == 0) {
         this->exitSys();
     }
     if (strcmp(_cmd, "h") == 0 || strcmp(_cmd, "help") == 0) {
         // todo: printHelp
     }
+    /* i */
     if (strcmp(_cmd, "i") == 0) {
-        // todo: interrupt
+        this->processResourceManager->clockInterrupt(rr);
+        return 0;
     }
-    std::cout << "Can't resolve command, input \"h\" for help info." << std::endl;
+    /* i scheduleAlgorithm */
+    if (tokens.size() == 2 && strcmp(tokens[0], "i") == 0
+        && (strcmp(tokens[1], "rr") == 0 || strcmp(tokens[1], "fifo") == 0)) {
+        if (strcmp(tokens[1], "rr") == 0) {
+            this->processResourceManager->clockInterrupt(rr);
+            return 0;
+        }
+        if (strcmp(tokens[1], "fifo") == 0) {
+            this->processResourceManager->clockInterrupt(fifo);
+            return 0;
+        }
+    }
+    std::cout << "Can't resolve command, input \"h\" for help." << std::endl;
 }
 
 void UserInterface::exitSys() {
@@ -203,7 +217,7 @@ void UserInterface::exitSys() {
 
 void UserInterface::init() {
     std::cout << "Initializing system...";
-    if (this->processResourceManager->init() == 0) {
+    if (this->processResourceManager->initialize() == 0) {
         std::cout << "[OK]" << std::endl;
     } else {
         std::cout << "[FAILED]" << std::endl;

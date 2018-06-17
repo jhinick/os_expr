@@ -27,7 +27,7 @@ ProcessControlBlock::ProcessControlBlock(int _processID, int _parentID, int _use
     this->parent        = nullptr;
     this->child         = nullptr;
     this->nextBrother   = nullptr;
-    this->childrenNumber= 0;
+    this->childNumber= 0;
     resourceList        = nullptr;
 }
 
@@ -39,6 +39,23 @@ int ProcessControlBlock::removeListInfo() {
     this->previous = nullptr;
     this->next = nullptr;
 }
+
+int ProcessControlBlock::addChild(ProcessControlBlock* _childPcb) {
+    ProcessControlBlock* temp = this->child;
+    for (int i = 0; i < this->childNumber; i++) {
+        temp = temp->nextBrother;
+    }
+    temp->nextBrother = _childPcb;
+    this->childNumber++;
+    return 0;
+}
+
+int ProcessControlBlock::removeChild(ProcessControlBlock *_childPcb) {
+    // todo
+}
+
+
+
 
 void ProcessControlBlock::printInfo() {
     std::cout << "PID: " << this->processID << "\t";
@@ -57,10 +74,16 @@ void ProcessControlBlock::printInfo() {
 
 void ProcessControlBlock::printFullInfo(){
     printf("Process %d info:\n", this->processID);
-    std::cout << "Process name:" << this->name << "\t";
-    std::cout << "Process ID:" << this->processID << "\t";
-    std::cout << "Parent ID:" << this->parentID << "\t";
-    std::cout << "User ID" << this->userID << "\t";
+    std::cout << "ProcessID:" << this->processID << "\t";
+    std::cout << "Name:" << this->name << "\t";
+    std::cout << "Parent:" << this->parentID << "\t";
+    std::cout << "NextBro:";
+    if (this->nextBrother == nullptr) {
+        std::cout << "NA" << "\t";
+    } else {
+        std::cout << this->nextBrother->processID;
+    }
+    std::cout << "UserID" << this->userID << "\t";
     std::cout << "State: ";
     if (this->state == Current)
         std::cout << "Current";
@@ -72,14 +95,20 @@ void ProcessControlBlock::printFullInfo(){
         std::cout << "Suspend";
     std::cout << "\t";
     std::cout << "Priority:";
-    if (this->priority == Init)
-        std::cout << "Init";
     if (this->priority == User)
         std::cout << "User";
     if (this->priority == System)
         std::cout << "System";
     std::cout << "\t";
-    std::cout << "Children number:" << this->childrenNumber << std::endl;
+
+    std::cout << "ChildNum:" << this->childNumber << std::endl;
+    if (this->childNumber > 0) {
+        std::cout << "ChildList:";
+        ProcessControlBlock* temp = this->child;
+        for (; child != nullptr; child = child->nextBrother) {
+            std::cout << child->processID << "\t";
+        }
+    }
 }
 
 /*====================ProcessControlBlockList=============================*/
@@ -227,7 +256,19 @@ int ProcessControlBlockList::removeByPid(int _processId) {
     return this->remove(this->searchByPid(_processId));
 }
 
-
+ProcessControlBlock* ProcessControlBlockList::getNext(schdule_algorithm _schedule_algorithm) {
+    ProcessControlBlock* ret = nullptr;
+    switch (_schedule_algorithm) {
+        case fifo:
+            ret = this->popFirst();
+            break;
+        case rr:
+            ret = this->popFirst();
+        default:
+            break;
+    }
+    return ret;
+}
 
 
 

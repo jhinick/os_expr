@@ -18,9 +18,11 @@ class ResourceList;
 enum    processState {Current, Blocked, Ready, Suspend};
 
 #ifndef PRIOR_LEVEL_NUM
-#define PRIOR_LEVEL_NUM   3 /*Indicates how many level exists in the system.*/
+#define PRIOR_LEVEL_NUM   2 /*Indicates how many level exists in the system.*/
 #endif
-enum    processPriority {Init, User, System};
+enum    processPriority {User, System};
+
+enum    schdule_algorithm {fifo, rr};
 
 class ProcessControlBlock {
 public:
@@ -36,7 +38,7 @@ public:
     ProcessControlBlock*    parent;
     ProcessControlBlock*    child;      // the first child
     ProcessControlBlock*    nextBrother;
-    int                     childrenNumber;
+    int                     childNumber;
 
     ResourceList*           resourceList;
 public:
@@ -44,6 +46,9 @@ public:
     ProcessControlBlock(int _processID, int _parentID, int _userID, processPriority _priority, std::string name);
     ~ProcessControlBlock();
     int removeListInfo();
+    int addChild(ProcessControlBlock* _childPcb);
+    /* assume that the child is this process' child process. */
+    int removeChild(ProcessControlBlock* _childPcb);
     void printInfo();
     void printFullInfo();
 };
@@ -67,7 +72,7 @@ public:
     ProcessControlBlock*    getFirst();
     /* Return the first node and remove it from the list, nullptr on error.*/
     ProcessControlBlock*    popFirst();
-    /* Return the last nod, nullptr on error. */
+    /* Return the last node, nullptr on error. */
     ProcessControlBlock*    getLast();
     /* Return the last node and remove it from the lis, nullptr on error.*/
     ProcessControlBlock*    popLast();
@@ -82,6 +87,8 @@ public:
     int remove(ProcessControlBlock* _pcb);
     int removeByPid(int _processId);
     int removeByName(std::string _name);
+    /* return value may be nullptr */
+    ProcessControlBlock* getNext(schdule_algorithm _schedule_algorithm);
 };
 
 
