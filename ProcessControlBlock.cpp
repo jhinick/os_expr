@@ -41,11 +41,14 @@ int ProcessControlBlock::removeListInfo() {
 }
 
 int ProcessControlBlock::addChild(ProcessControlBlock* _childPcb) {
-    ProcessControlBlock* temp = this->child;
-    for (int i = 0; i < this->childNumber; i++) {
-        temp = temp->nextBrother;
+    if (this->child == nullptr) {
+        this->child = _childPcb;
+    } else {
+        ProcessControlBlock* temp = this->child;
+        while (temp->nextBrother != nullptr)
+            temp = temp->nextBrother;
+        temp->nextBrother = _childPcb;
     }
-    temp->nextBrother = _childPcb;
     this->childNumber++;
     return 0;
 }
@@ -73,18 +76,17 @@ void ProcessControlBlock::printInfo() {
 }
 
 void ProcessControlBlock::printFullInfo(){
-    printf("Process %d info:\n", this->processID);
-    std::cout << "ProcessID:" << this->processID << "\t";
-    std::cout << "Name:" << this->name << "\t";
-    std::cout << "Parent:" << this->parentID << "\t";
+    std::cout << "ID:" << this->processID << " \t";
+    std::cout << "Name:" << this->name << " \t";
+    std::cout << "Parent:" << this->parentID << " \t";
     std::cout << "NextBro:";
     if (this->nextBrother == nullptr) {
-        std::cout << "NA" << "\t";
+        std::cout << "NA" << " \t";
     } else {
         std::cout << this->nextBrother->processID;
     }
-    std::cout << "UserID" << this->userID << "\t";
-    std::cout << "State: ";
+    std::cout << "UserID:" << this->userID << " \t";
+    std::cout << "State:";
     if (this->state == Current)
         std::cout << "Current";
     if (this->state == Ready)
@@ -93,22 +95,22 @@ void ProcessControlBlock::printFullInfo(){
         std::cout << "Blocked";
     if (this->state == Suspend)
         std::cout << "Suspend";
-    std::cout << "\t";
+    std::cout << " \t";
     std::cout << "Priority:";
     if (this->priority == User)
-        std::cout << "User";
+        std::cout << "User \t";
     if (this->priority == System)
-        std::cout << "System";
-    std::cout << "\t";
+        std::cout << "System \t";
 
-    std::cout << "ChildNum:" << this->childNumber << std::endl;
+    std::cout << "ChildNum:" << this->childNumber << " \t";
     if (this->childNumber > 0) {
         std::cout << "ChildList:";
         ProcessControlBlock* temp = this->child;
-        for (; child != nullptr; child = child->nextBrother) {
-            std::cout << child->processID << "\t";
+        for (; temp != nullptr; temp = child->nextBrother) {
+            std::cout << temp->processID << " \t";
         }
     }
+    std::cout << std::endl;
 }
 
 /*====================ProcessControlBlockList=============================*/

@@ -23,6 +23,7 @@ enum getNextAlgorithm {FIFO};
 
 
 
+
 class ProcessResourceManager {
 public:
     ProcessControlBlockList     list[PROCESS_STATE_NUM][PRIOR_LEVEL_NUM];

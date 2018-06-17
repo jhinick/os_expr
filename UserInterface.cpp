@@ -33,7 +33,7 @@ void UserInterface::run() {
     while (true) {
         char* cmd = nullptr;
         size_t len = 128;
-        std::cout << "%" << this->processResourceManager->current->name << "% ";
+        std::cout << std::endl << "%" << this->processResourceManager->current->name << "% ";
         getline(&cmd, &len, stdin);
         cmd[strlen(cmd) - 1] = '\0';        // change the terminate char to
         runCommand(cmd);
