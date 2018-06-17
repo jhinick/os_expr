@@ -15,7 +15,7 @@ class ResourceList;
 #ifndef PROCESS_STATE_NUM
 #define PROCESS_STATE_NUM 4  /*Indicates how many states can a process be in in the system.*/
 #endif
-enum    processState {Running, Blocked, Ready, Suspend};
+enum    processState {Current, Blocked, Ready, Suspend};
 
 #ifndef PRIOR_LEVEL_NUM
 #define PRIOR_LEVEL_NUM   3 /*Indicates how many level exists in the system.*/
@@ -24,28 +24,26 @@ enum    processPriority {Init, User, System};
 
 class ProcessControlBlock {
 public:
-    /* 15 attributes in total.*/
     int                     processID;
     int                     parentID;
     int                     userID;
     processState            state;
     processPriority         priority;
-    std::string             info;
     std::string             name;
-    /* Form a dual direction linked list.*/
     ProcessControlBlock*    previous;
     ProcessControlBlock*    next;
     /*Implement a process creation tree.*/
     ProcessControlBlock*    parent;
     ProcessControlBlock*    child;      // the first child
     ProcessControlBlock*    nextBrother;
-    ProcessControlBlock*    preBrother;
     int                     childrenNumber;
 
     ResourceList*           resourceList;
 public:
-    ProcessControlBlock(int _processID, int _parentID, int _userID, processState _state, processPriority _priority, std::string info, std::string name);
+    ProcessControlBlock();
+    ProcessControlBlock(int _processID, int _parentID, int _userID, processPriority _priority, std::string name);
     ~ProcessControlBlock();
+    int removeListInfo();
     void printInfo();
     void printFullInfo();
 };
@@ -73,11 +71,17 @@ public:
     ProcessControlBlock*    getLast();
     /* Return the last node and remove it from the lis, nullptr on error.*/
     ProcessControlBlock*    popLast();
-    ProcessControlBlock* getByPid(int _processId);
-    ProcessControlBlock* getByName(std::string _processName);
+    /* Return the pointer to the pcb, return nullptr on error or not found.*/
+    ProcessControlBlock* searchByPid(int _processId);
+    ProcessControlBlock* searchByName(std::string _processName);
+    bool isEmpty();
+    bool isNotEmpty();
     /* Return -1 when the list is empty.*/
     int printInfo();
     int printFullInfo();
+    int remove(ProcessControlBlock* _pcb);
+    int removeByPid(int _processId);
+    int removeByName(std::string _name);
 };
 
 

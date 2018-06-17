@@ -14,9 +14,11 @@
 #include <fcntl.h>
 #include <string>
 #include <vector>
-#include <stdlib.h>
+#include <cstdlib>
 #include <sstream>
 #include <cstring>
+#include "error.h"
+#include "Error.h"
 
 UserInterface::UserInterface(ProcessResourceManager* _processResourceManager) {
     this->processResourceManager = _processResourceManager;
@@ -32,18 +34,10 @@ void UserInterface::run() {
     while (true) {
         char* cmd = nullptr;
         size_t len = 128;
-        std::cout << "%%";
+        std::cout << "%" << this->processResourceManager->current->name << "%";
         getline(&cmd, &len, stdin);
         cmd[strlen(cmd) - 1] = '\0';        // change the terminate char to
         int runState = runCommand(cmd);
-        switch (runState) {
-            // todo: check the return value of runCommand()
-            case (1):
-                break;
-            default:
-                break;
-        }
-        if (i) break;
     }
 }
 
@@ -121,6 +115,7 @@ int UserInterface::getAndAnalyseCommand(){
 }
 
 int UserInterface::runCommand(char* _cmd) {
+    int state;
     char* tok = nullptr;
     std::vector<char*> tokens;
     tokens.clear();
@@ -129,58 +124,80 @@ int UserInterface::runCommand(char* _cmd) {
         tokens.push_back(tok);
         tok = strtok(nullptr, " ");
     }
-    char cr[] = "cr";
-    char _n[] = "-n";
-    char _p[] = "-p";
-    char kill[] = "kill";
-    char ls[] = "ls";
-    char _l[] = "-l";
-    /*  All available command
-     *  cr -n processName               ; create a process with default priority
-     *  cr -n processName -p priority   ; create a process with specified priority
-     *  kill processNum                 ; kill a process by pid
+    /*  All valid commands
+     *  cr -n processName               ; create a process with default (User) priority
+     *  cr -n processName -p priority   ; create a process with specified priority, priority
+     *                                    can be "System" "system" or "User" "user"
+     *  kill processID                 ; kill a process by pid
      *  kill -n processName             ; kill a process by name
+     *  ccp processID                  ; change current process
+     *  ccp -n processName              ; change current process by name
      *  ls                              ; list all processes' name, pid and state
      *  ls -l                           ; list all processes' full information
      *  exit or Exit                    ; terminate the system
+     *  h or help                       ; print help info
+     *  i                               ; interrupt for scheduler
      * */
-    if (tokens.size() == 3 && strcmp(tokens[0], cr) == 0 && strcmp(tokens[1], _n) == 0) {
-        //todo
-        // cr -n processName
+
+    /* cr -n processName */
+    if (tokens.size() == 3 && strcmp(tokens[0], "cr") == 0 && strcmp(tokens[1], "-n") == 0) {
+        this->processResourceManager->createProcess(tokens[2]);
+        return 0;
+        // todo: check return value
     }
-    if (tokens.size() == 5 && strcmp(tokens[0], cr) == 0 && strcmp(tokens[1], _n) == 0 && strcmp(tokens[3], _p) == 0) {
-        //todo
-        // cr -n name -p prior
+    /* cr -n processName -p priority */
+    if (tokens.size() == 5 && strcmp(tokens[0], "cr") == 0 && strcmp(tokens[1], "-n") == 0 && strcmp(tokens[3], "-p") == 0) {
+        processPriority priority = User;
+        if (strcmp(tokens[4], "System") == 0 ||strcmp(tokens[4], "system") == 0 ) {
+            this->processResourceManager->createProcess(tokens[2], System);
+            return 0;
+        }
+        if (strcmp(tokens[4], "User") == 0 || strcmp(tokens[4], "user") == 0) {
+            this->processResourceManager->createProcess(tokens[2], User);
+            return 0;
+        }
+        return -1;
     }
-    if (tokens.size() == 2 && strcmp(tokens[0], kill) == 0) {
-        //todo
-        // kill pid
+    /* kill pid */
+    if (tokens.size() == 2 && strcmp(tokens[0], "kill") == 0) {
+        state = this->processResourceManager->killProcess(atoi(tokens[1]));
+        if (state != 0)
+            Error::printInfo(state);
+        return 0;
     }
-    if (tokens.size() == 3 && strcmp(tokens[0], kill) == 0 && strcmp(tokens[1], _n) == 0) {
-        //todo
-        // kill -n name
+    /* kill -n processName */
+    if (tokens.size() == 3 && strcmp(tokens[0], "kill") == 0 && strcmp(tokens[1], "-n") == 0) {
+        state = this->processResourceManager->killProcess(tokens[2]);
+        if (state != 0)
+            Error::printInfo(state);
+        return 0;
     }
-    if (tokens.size() == 1 && strcmp(tokens[0], ls) == 0) {
+    /* ls */
+    if (tokens.size() == 1 && strcmp(tokens[0], "ls") == 0) {
         this->processResourceManager->printProcessInfo();
-        // ls
+        return 0;
     }
-    if (tokens.size() == 2 && strcmp(tokens[0], ls) == 0 && strcmp(tokens[1], _l) == 0) {
+    if (tokens.size() == 2 && strcmp(tokens[0], "ls") == 0 && strcmp(tokens[1], "-l") == 0) {
         this->processResourceManager->printProcessFullInfo();
-        // ls -l
+        return 0;
     }
     if (strcmp(_cmd, "exit") == 0 || strcmp(_cmd, "Exit") == 0) {
-        //todo
-        // exit the system
         this->exitSys();
     }
-
+    if (strcmp(_cmd, "h") == 0 || strcmp(_cmd, "help") == 0) {
+        // todo: printHelp
+    }
+    if (strcmp(_cmd, "i") == 0) {
+        // todo: interrupt
+    }
+    std::cout << "Can't resolve command, input \"h\" for help info." << std::endl;
 }
 
 void UserInterface::exitSys() {
     std::cout << "Sure to exit? Press 1 to exit, otherwise continue.";
-    int opt;
-    std::cin >> opt;
-    if (opt == 1)
+    char opt;
+    opt = getchar();
+    if (opt == '1')
         exit(0);
 }
 
