@@ -11,6 +11,7 @@ public:
     static int PROCESS_NOT_FOUND;
     static int UNKNOWN_ERROR;
     static int NO_PROCESS_ID_AVAILABLE;
+    static int NO_RESOURCE_ID_AVAILABLE;
     static int CANNOT_REMOVE_INIT;
     static int PCB_NOT_FOUND_IN_LIST;
 public:

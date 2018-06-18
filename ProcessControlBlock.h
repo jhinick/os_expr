@@ -12,17 +12,13 @@ class ResourceList;
 
 #include <string>
 
-#ifndef PROCESS_STATE_NUM
 #define PROCESS_STATE_NUM 4  /*Indicates how many states can a process be in in the system.*/
-#endif
 enum    processState {Current, Blocked, Ready, Suspend};
 
-#ifndef PRIOR_LEVEL_NUM
 #define PRIOR_LEVEL_NUM   2 /*Indicates how many level exists in the system.*/
-#endif
 enum    processPriority {User, System};
 
-enum    schdule_algorithm {fifo, rr};
+enum    schedule_algorithm {fifo, rr};
 
 class ProcessControlBlock {
 public:
@@ -88,7 +84,7 @@ public:
     int removeByPid(int _processId);
     int removeByName(std::string _name);
     /* return value may be nullptr */
-    ProcessControlBlock* getNext(schdule_algorithm _schedule_algorithm);
+    ProcessControlBlock* getNext(schedule_algorithm _schedule_algorithm);
 };
 
 

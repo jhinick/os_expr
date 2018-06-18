@@ -10,6 +10,7 @@ int Error::PROCESS_NOT_FOUND               = -101;
 int Error::NO_PROCESS_ID_AVAILABLE         = -103;
 int Error::CANNOT_REMOVE_INIT              = -104;
 int Error::PCB_NOT_FOUND_IN_LIST           = -105;
+int Error::NO_RESOURCE_ID_AVAILABLE        = -106;
 
 void Error::printInfo(int _errorNum) {
     switch (_errorNum) {

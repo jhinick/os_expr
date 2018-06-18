@@ -141,7 +141,7 @@ int ProcessResourceManager::killProcess(int _processID) {
     }
 }
 
-int ProcessResourceManager::schdule(schdule_algorithm _schdule_algorithm, processState _processState) {
+int ProcessResourceManager::schdule(schedule_algorithm _schdule_algorithm, processState _processState) {
     /* Put the PCB to the right list, if the process is init, don't do that.*/
     // todo :append or not?
     this->current->state = _processState;
@@ -162,6 +162,6 @@ int ProcessResourceManager::schdule(schdule_algorithm _schdule_algorithm, proces
     this->setCurrent(next);
 }
 
-int ProcessResourceManager::clockInterrupt(schdule_algorithm _schdule_algorithm) {
-    this->schdule(_schdule_algorithm, Ready);
+int ProcessResourceManager::clockInterrupt(schedule_algorithm _schedule_algorithm) {
+    this->schdule(_schedule_algorithm, Ready);
 }

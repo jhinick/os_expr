@@ -14,10 +14,7 @@
 #include "Resource.h"
 
 
-#ifndef MAX_PROCESS
 #define MAX_PROCESS 128
-#endif
-
 enum getNextAlgorithm {FIFO};
 
 
@@ -29,12 +26,8 @@ public:
     ProcessControlBlockList     list[PROCESS_STATE_NUM][PRIOR_LEVEL_NUM];
     ProcessControlBlock*        current;
     ProcessControlBlock*        init;
-#ifndef ID_AVAILABLE
 #define ID_AVAILABLE 0
-#endif
-#ifndef ID_OCCUPIED
 #define ID_OCCUPIED 1
-#endif
     int pidPool[MAX_PROCESS];
 public:
     ProcessResourceManager();
@@ -59,9 +52,9 @@ public:
      * 4.   When there is no process to run, run init process.
      * @return  0 on success. nonzero on error.
      */
-    int schdule(schdule_algorithm, processState _processState);
+    int schdule(schedule_algorithm, processState _processState);
     /* We handle clock interrupt with round robin algorithm */
-    int clockInterrupt(schdule_algorithm _schdule_algorithm = rr);
+    int clockInterrupt(schedule_algorithm _schdule_algorithm = rr);
 };
 
 #endif //OS_EXPR_PROCESSMANAGER_H

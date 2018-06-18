@@ -81,7 +81,17 @@ int UserInterface::getAndAnalyseCommand(){
      *  kill -n processName             ; kill a process by name
      *  ls                              ; list all processes' name, pid and state
      *  ls -l                           ; list all processes' full information
-     *
+     *  todo:
+     *  source fileName                 ; run source file script
+     *  todo:
+     *  source                          ; run default file in work dir
+     *  todo:
+     *  echo string                     ; print string
+     *  req sourceType                  ; request for system resource
+     *  rel -n sourceType               ; release resource
+     *  rel -a                          ; release all resource
+     *  lr
+     *  lr -l                           ; list resource full status
      * */
     // cr -n processName
     char cr[] = "cr";
