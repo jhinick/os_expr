@@ -76,6 +76,40 @@ public:
 
 
 
+void ResourceList::printFullInfo() {
+    // todo;
+}
+
+ResourceList::ResourceList() {
+    this->head = new Resource();
+    this->tail = new Resource();
+    this->head->previous = nullptr;
+    this->head->next = this->tail;
+    this->tail->previous = this->head;
+    this->tail->next = nullptr;
+    this->length = 0;
+    this->freeNum = 0;
+    this->sysRequestQueue = new ProcessControlBlockList();
+    this->userRequestQueue = new ProcessControlBlockList();
+}
+
+int ResourceList::releaseResource(ProcessControlBlock *_processControlBlock) {
+    Resource* temp = this->head->next;
+    while (true) {
+        if (temp->processControlBlock == _processControlBlock)
+            break;
+        temp = temp->next;
+    }
+    temp->releaseResource();
+    this->freeNum++;
+    // todo: unblock some processes
+    return 0;
+}
+
+int ResourceList::checkFree() {
+    if (this->freeNum <= 0)
+        return 0;
+}
 
 
 
