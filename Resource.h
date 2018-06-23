@@ -5,16 +5,18 @@
 #ifndef RESOURCE_H
 #define RESOURCE_H
 
-#include <vector>
-#include "ProcessControlBlock.h"
+
 
 class ProcessControlBlockList;
+class ProcessManager;
+class Process;
 
 #define MAX_RESOURCE_NUM 1024
-#define RESOUCETYPENUM  4
+#define RESOURCETYPENUM   4
+
 
 enum ResourceType {resource0, resource1, resource2, resource3};
-enum ResourceStatus {free, occupied};
+enum ResourceStatus {Free, Occupied};
 
 
 /*==========================================================================*/
@@ -26,13 +28,13 @@ public:
     ResourceStatus  resourceStatus;
     Resource*       previous;
     Resource*       next;
-    ProcessControlBlock*    processControlBlock;
+    Process*        processControlBlock;
 public:
     Resource();
-    int Resource(int _resourceID, ResourceType _resourceType);
-    int requireResource(ProcessControlBlock* _processControlBlock);
-    int releaseResource();
+    Resource(int _resourceID, ResourceType _resourceType);
     bool isFree();
+    void printInfo();
+    void printFullInfo();
 };
 /*==========================================================================*/
 /* Every kind of resource linked together and form a ResourceList*/
@@ -42,83 +44,46 @@ public:
     Resource*       tail;
     int             length;
     int             freeNum;
+    int             waitNum;
     ProcessControlBlockList*    sysRequestQueue;
     ProcessControlBlockList*    userRequestQueue;
 public:
     ResourceList();
     int addResource(int _resourceID, ResourceType _resourceType);
     int append(Resource* _resource);
-    Resource* requireResource(ProcessControlBlock* _processControlBlock);
-    int releaseResource(ProcessControlBlock* _processControlBlock);
+    /* Remoce but not delete*/
+    int remove(Resource* _resource);
+    Resource* remove(ResourceType _resourceType);
+    Resource* getResource(Resource* _resource);
+    Resource* getResource(Process* _process);
+    Resource* getResource(ResourceType _resourceType);
     Resource* firstFree();
-    int checkFree();
     void printInfo();
     void printFullInfo();
 };
 
 /*==========================================================================*/
 /* This class interact with exterior processes.*/
-class ResourceManger {
+class ResourceManager {
 public:
-    ResourceList        resourceList[RESOUCETYPENUM];
+    ResourceList        resourceList[RESOURCETYPENUM];
     /* 0 for free and 1 for used*/
     int                 resourceIdPool[MAX_RESOURCE_NUM];
+    ProcessManager*     processManager;
 public:
-    ResourceManger();
+    ResourceManager();
+    int setProcessManager(ProcessManager* _processManager);
     /* add resource to ResourceManager*/
     int init(int _0_num, int _1_num, int _2_num, int _3_num);
     int addResource(ResourceType _resourceType);
     /* return -1 on error*/
     int getResourceID();
-    Resource* requireResource(ResourceType _resourceType, ProcessControlBlock* _processControlBlockList);
-    int releaseResource(ResourceType _resourceType, ProcessControlBlock* _processControlBlock);
+    Resource* requireResource(ResourceType _resourceType, Process* _processControlBlockList);
+    int releaseResource(ResourceType _resourceType, Process* _processControlBlock);
+    int assignResource(ResourceType _resourceType);
+    /* Assign a free resource to a waiting process*/
+    int assignResource(ResourceType _resourceType, Process* _process);
 };
-
-
-
-void ResourceList::printFullInfo() {
-    // todo;
-}
-
-ResourceList::ResourceList() {
-    this->head = new Resource();
-    this->tail = new Resource();
-    this->head->previous = nullptr;
-    this->head->next = this->tail;
-    this->tail->previous = this->head;
-    this->tail->next = nullptr;
-    this->length = 0;
-    this->freeNum = 0;
-    this->sysRequestQueue = new ProcessControlBlockList();
-    this->userRequestQueue = new ProcessControlBlockList();
-}
-
-int ResourceList::releaseResource(ProcessControlBlock *_processControlBlock) {
-    Resource* temp = this->head->next;
-    while (true) {
-        if (temp->processControlBlock == _processControlBlock)
-            break;
-        temp = temp->next;
-    }
-    temp->releaseResource();
-    this->freeNum++;
-    // todo: unblock some processes
-    return 0;
-}
-
-int ResourceList::checkFree() {
-    if (this->freeNum <= 0)
-        return 0;
-}
-
-
-
-
-
-
-
-
-
 
 
 #endif

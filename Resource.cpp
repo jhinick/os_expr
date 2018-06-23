@@ -1,15 +1,19 @@
 //
+
 // Created by hjh on 18-5-27.
 //
 
+#include <iostream>
 #include "Resource.h"
+#include "Error.h"
+#include "Process.h"
 
-/*================================================================================*/
+/*==============         Resource         ====================================*/
 
 Resource::Resource() {
-    this->resourceID        = NULL;
-    this->resourceType      = NULL;
-    this->resourceStatus    = NULL;
+    this->resourceID        = -1;
+    this->resourceType      = resource0;
+    this->resourceStatus    = Free;
     this->previous          = nullptr;
     this->next              = nullptr;
     this->processControlBlock = nullptr;
@@ -18,34 +22,35 @@ Resource::Resource() {
 Resource::Resource(int _resourceID, ResourceType _resourceType){
     this->resourceID = _resourceID;
     this->resourceType = _resourceType;
-    this->resourceStatus = free;
+    this->resourceStatus = Free;
     this->previous = nullptr;
     this->next = nullptr;
     this->processControlBlock = nullptr;
 }
 
 bool Resource::isFree() {
-    return (this->resourceStatus == free);
+    return (this->resourceStatus == Free);
 }
 
-int Resource::requireResource(ProcessControlBlock* _processControlBlock) {
-    if (this->resourceStatus == occupied)
-        return -1;
-    this->resourceStatus = occupied;
-    this->processControlBlock = _processControlBlock;
-    return 0;
+void Resource::printInfo() {
+
 }
 
-int Resource::releaseResource() {
-    this->resourceStatus = free;
-    this->processControlBlock = nullptr;
-    return 0;
+void Resource::printFullInfo() {
+	std::cout << "ResourceID: " << this->resourceID;
+	std::cout << "Type: " << this->resourceType;
+	std::cout << "Status: " << this->resourceStatus;
+	std::cout << "Process: ";
+	if (this->processControlBlock == nullptr) {
+		std::cout << this->processControlBlock->processID;
+	} else {
+		std::cout << "NA";
+	}
 }
 
-/*================================================================================*/
+/*============         ResourceList         ===================================*/
 
 int ResourceList::addResource(int _resourceID, ResourceType _resourceType) {
-    // todo: unblock some process
     Resource* temp = new Resource(_resourceID, _resourceType);
     this->append(temp);
     return 0;
@@ -59,22 +64,6 @@ int ResourceList::append(Resource* _resource) {
     this->length++;
     this->freeNum++;
     return 0;
-}
-
-Resource* ResourceList::requireResource(ProcessControlBlock* _processControlBlock) {
-    if (this->freeNum <= 0) {
-        if (_processControlBlock->priority == User)
-            this->userRequestQueue->append(_processControlBlock);
-        if (_processControlBlock->priority == System)
-            this->sysRequestQueue->append(_processControlBlock);
-        this->freeNum--;
-        // todo: block the process
-        return nullptr;
-    }
-    Resource* ret = this->firstFree();
-    ret->requireResource(_processControlBlock);
-    this->freeNum--;
-    return ret;
 }
 
 Resource* ResourceList::firstFree(){
@@ -94,7 +83,18 @@ void ResourceList::printInfo() {
 }
 
 void ResourceList::printFullInfo() {
-    // todo;
+	std::cout << "ResourceTotalNum: " << this->length << "\t"
+				<< "FreeNum: " << this->freeNum << "\t";
+	if (this->freeNum < 0)
+		std::cout << "WaitNum: " << this->waitNum;
+	std::cout << std::endl;
+	Resource* temp = this->head;
+	for (int i = 0; i < this->length; i++) {
+		temp = temp->next;
+		std::cout << i << ": ";
+		temp->printFullInfo();
+		std::cout << std::endl;
+	}
 }
 
 ResourceList::ResourceList() {
@@ -106,36 +106,64 @@ ResourceList::ResourceList() {
     this->tail->next = nullptr;
     this->length = 0;
     this->freeNum = 0;
+    this->waitNum = 0;
     this->sysRequestQueue = new ProcessControlBlockList();
     this->userRequestQueue = new ProcessControlBlockList();
 }
 
-int ResourceList::releaseResource(ProcessControlBlock *_processControlBlock) {
-    Resource* temp = this->head->next;
-    while (true) {
-        if (temp->processControlBlock == _processControlBlock)
-            break;
-        temp = temp->next;
-    }
-    temp->releaseResource();
-    this->freeNum++;
-    // todo: unblock some processes
-    return 0;
+
+int ResourceList::remove(Resource *_resource) {
+	Resource* tmp = this->getResource(_resource);
+	if (tmp == this->tail)
+		return -1;
+	tmp->previous->next = tmp->next;
+	tmp->next->previous = tmp->previous;
+	this->length--;
+	return 0;
 }
 
-int ResourceList::checkFree() {
-    if (this->freeNum <= 0)
-        return 0;
-    if (this->sysRequestQueue->length == 0 && this->userRequestQueue->length == 0)
-        return 0;
-    //todo:unblock some processes
-    return 0;
+Resource* ResourceList::getResource(Resource* _resource) {
+	Resource* tmp = this->head;
+	while (tmp != _resource && tmp != tail) {
+		tmp = tmp->next;
+	}
+	if (tmp == this->tail)
+		return nullptr;
+	return tmp;
 }
 
-/*================================================================================*/
-ResourceManger::ResourceManger() = default;
+Resource *ResourceList::getResource(Process *_process) {
+	Resource* ret = this->head;
+	while (ret != this->tail && ret->processControlBlock != _process)
+		ret = ret->next;
+	if (ret != this->tail)
+		return ret;
+	return nullptr;
+}
 
-int ResourceManger::init(int _0_num, int _1_num, int _2_num, int _3_num) {
+Resource* ResourceList::remove(ResourceType _resourceType) {
+	Resource* tmp = this->getResource(_resourceType);
+	if (tmp == nullptr)
+		return nullptr;
+	tmp->previous->next = tmp->next;
+	tmp->next->previous = tmp->previous;
+	return tmp;
+}
+
+Resource *ResourceList::getResource(ResourceType _resourceType) {
+	this->tail->resourceType = _resourceType;
+	Resource* ret = this->head;
+	while (ret->resourceType != _resourceType)
+		ret = ret->next;
+	if (ret == this->tail)
+		return nullptr;
+	return ret;
+}
+
+/*==============         ResourceManager         ==============================*/
+ResourceManager::ResourceManager() = default;
+
+int ResourceManager::init(int _0_num, int _1_num, int _2_num, int _3_num) {
     for (int i = 0; i < MAX_RESOURCE_NUM; ++i) {
         this->resourceIdPool[i] = 0;
     }
@@ -153,28 +181,95 @@ int ResourceManger::init(int _0_num, int _1_num, int _2_num, int _3_num) {
     }
 }
 
-int ResourceManger::addResource(ResourceType _resourceType) {
+int ResourceManager::addResource(ResourceType _resourceType) {
     this->resourceList[_resourceType].addResource(this->getResourceID(), _resourceType);
+    if (resourceList[_resourceType].freeNum > 0 && resourceList[_resourceType].waitNum > 0)
+    	this->assignResource(_resourceType);
+	return 0;
 }
 
-int ResourceManger::getResourceID() {
+int ResourceManager::getResourceID() {
     for (int i = 0; i < MAX_RESOURCE_NUM; ++i) {
         if (this->resourceIdPool[i] == 0) {
             this->resourceIdPool[i] = 1;
             return i;
         }
     }
-    return -1;
+    return Error::NO_RESOURCE_ID_AVAILABLE;
 }
 
-Resource* ResourceManger::requireResource(ResourceType _resourceType, ProcessControlBlock* _processControlBlock){
-    return this->resourceList[_resourceType].requireResource(_processControlBlock);
+Resource* ResourceManager::requireResource(ResourceType _resourceType, Process* _process){
+	if (this->resourceList[_resourceType].freeNum <= 0) {
+		if (_process->priority == User)
+			this->resourceList[_resourceType].userRequestQueue->append(_process);
+		if (_process->priority == System)
+			this->resourceList[_resourceType].sysRequestQueue->append(_process);
+		this->resourceList[_resourceType].freeNum--;
+		this->resourceList[_resourceType].waitNum++;
+		_process->addWaitResource(this->resourceList[_resourceType].head);
+		this->processManager->blockProcess(_process);
+		return nullptr;
+	} else {
+		Resource* tmp = this->resourceList[_resourceType].firstFree();
+		tmp->processControlBlock = _process;
+		tmp->resourceStatus = Occupied;
+		this->resourceList[_resourceType].freeNum--;
+		_process->addOccupiedResource(tmp);
+		return tmp;
+	}
 }
 
-int ResourceManger::releaseResource(ResourceType _resourceType, ProcessControlBlock *_processControlBlock) {
-    this->resourceList[_resourceType].requireResource(_processControlBlock);
+int ResourceManager::releaseResource(ResourceType _resourceType, Process *_process) {
+	Resource* tmp = this->resourceList[_resourceType].getResource(_process);
+	if (tmp == nullptr)
+		return -1;
+	tmp->processControlBlock->removeOccupiedResource(tmp);
+	tmp->resourceStatus = Free;
+	tmp->processControlBlock = nullptr;
+	this->resourceList[_resourceType].freeNum++;
+	if (this->resourceList[_resourceType].freeNum > 0 && this->resourceList[_resourceType].waitNum > 0) {
+		this->assignResource(_resourceType);
+	}
     return 0;
 }
+
+int ResourceManager::assignResource(ResourceType _resourceType) {
+	if (!(this->resourceList[_resourceType].freeNum > 0 && this->resourceList[_resourceType].waitNum > 0))
+		return -1;
+	if (this->resourceList[_resourceType].sysRequestQueue->length > 0) {
+		this->requireResource(_resourceType, this->resourceList[_resourceType].sysRequestQueue->popFirst());
+	} else {
+		this->requireResource(_resourceType, this->resourceList[_resourceType].userRequestQueue->popFirst());
+	}
+	return 0;
+}
+
+int ResourceManager::assignResource(ResourceType _resourceType, Process* _process) {
+	Resource* tmp = this->resourceList[_resourceType].firstFree();
+	if (tmp == nullptr)
+		return -1;
+	tmp->resourceStatus = Occupied;
+	tmp->processControlBlock = _process;
+	this->resourceList[_resourceType].freeNum--;
+	if (_process->priority == User) {
+		this->resourceList[_resourceType].userRequestQueue->remove(_process);
+	} else {
+		this->resourceList[_resourceType].sysRequestQueue->remove(_process);
+	}
+	_process->waitResourceList->remove(_resourceType);
+	if (_process->waitResourceList->length == 0)
+		this->processManager->unBlockProcess(_process);
+	return 0;
+}
+
+
+
+int ResourceManager::setProcessManager(ProcessManager *_processManager) {
+	this->processManager = _processManager;
+	return 0;
+}
+
+
 
 
 

@@ -3,18 +3,13 @@
 //
 
 #include "Resource.h"
-#include "ProcessControlBlock.h"
-#include "ProcessResourceManager.h"
+#include "Process.h"
 #include "UserInterface.h"
 
-#include <cstdio>
-
-
-
-
 int main(int argc, char** argv) {
-    ProcessResourceManager processResourceManager;
-    UserInterface userInterface = UserInterface(&processResourceManager);
+    ProcessManager processResourceManager;
+    ResourceManager resourceManager;
+    UserInterface userInterface = UserInterface(&processResourceManager, &resourceManager);
     userInterface.run();
     return 0;
 }
