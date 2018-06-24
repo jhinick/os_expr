@@ -37,11 +37,14 @@ void Resource::printInfo() {
 }
 
 void Resource::printFullInfo() {
-	std::cout << "ResourceID: " << this->resourceID;
-	std::cout << "Type: " << this->resourceType;
-	std::cout << "Status: " << this->resourceStatus;
+	std::cout << "ResourceID: " << this->resourceID << "\t";
+	std::cout << "Status: ";
+	if (this->resourceStatus == 0)
+		std::cout << "Free\t";
+	if (this->resourceStatus == 1)
+		std::cout << "Occupied\t";
 	std::cout << "Process: ";
-	if (this->processControlBlock == nullptr) {
+	if (this->processControlBlock != nullptr) {
 		std::cout << this->processControlBlock->processID;
 	} else {
 		std::cout << "NA";
@@ -83,7 +86,8 @@ void ResourceList::printInfo() {
 }
 
 void ResourceList::printFullInfo() {
-	std::cout << "ResourceTotalNum: " << this->length << "\t"
+	std::cout << "ResourceType: " << this->head->next->resourceType << "\t";
+	std::cout << "TotalNum: " << this->length << "\t"
 				<< "FreeNum: " << this->freeNum << "\t";
 	if (this->freeNum < 0)
 		std::cout << "WaitNum: " << this->waitNum;
@@ -91,7 +95,6 @@ void ResourceList::printFullInfo() {
 	Resource* temp = this->head;
 	for (int i = 0; i < this->length; i++) {
 		temp = temp->next;
-		std::cout << i << ": ";
 		temp->printFullInfo();
 		std::cout << std::endl;
 	}
@@ -112,14 +115,23 @@ ResourceList::ResourceList() {
 }
 
 
-int ResourceList::remove(Resource *_resource) {
-	Resource* tmp = this->getResource(_resource);
+Resource* ResourceList::remove(Resource *_resource) {
+	Resource* tmp = this->findResource(_resource->resourceID);
 	if (tmp == this->tail)
-		return -1;
+		return nullptr;
 	tmp->previous->next = tmp->next;
 	tmp->next->previous = tmp->previous;
 	this->length--;
-	return 0;
+	return tmp;
+}
+
+Resource* ResourceList::findResource(int _resourceID) {
+	Resource* temp = this->head;
+	while (temp->resourceID != _resourceID && temp != this->tail)
+		temp = temp->next;
+	if (temp == this->tail)
+		return nullptr;
+	return temp;
 }
 
 Resource* ResourceList::getResource(Resource* _resource) {
@@ -131,6 +143,8 @@ Resource* ResourceList::getResource(Resource* _resource) {
 		return nullptr;
 	return tmp;
 }
+
+
 
 Resource *ResourceList::getResource(Process *_process) {
 	Resource* ret = this->head;
@@ -159,6 +173,17 @@ Resource *ResourceList::getResource(ResourceType _resourceType) {
 		return nullptr;
 	return ret;
 }
+
+Resource *ResourceList::getResource(int _processID) {
+	Resource* temp = this->head;
+	for (int i = 0; i < this->length; i++) {
+		temp = temp->next;
+		if (temp->processControlBlock->processID == _processID)
+			return temp;
+	}
+	return nullptr;
+}
+
 
 /*==============         ResourceManager         ==============================*/
 ResourceManager::ResourceManager() = default;
@@ -201,9 +226,9 @@ int ResourceManager::getResourceID() {
 Resource* ResourceManager::requireResource(ResourceType _resourceType, Process* _process){
 	if (this->resourceList[_resourceType].freeNum <= 0) {
 		if (_process->priority == User)
-			this->resourceList[_resourceType].userRequestQueue->append(_process);
+			this->resourceList[_resourceType].userRequestQueue->append(new Process(_process->processID));
 		if (_process->priority == System)
-			this->resourceList[_resourceType].sysRequestQueue->append(_process);
+			this->resourceList[_resourceType].sysRequestQueue->append(new Process(_process->processID));
 		this->resourceList[_resourceType].freeNum--;
 		this->resourceList[_resourceType].waitNum++;
 		_process->addWaitResource(this->resourceList[_resourceType].head);
@@ -211,7 +236,7 @@ Resource* ResourceManager::requireResource(ResourceType _resourceType, Process* 
 		return nullptr;
 	} else {
 		Resource* tmp = this->resourceList[_resourceType].firstFree();
-		tmp->processControlBlock = _process;
+		tmp->processControlBlock = new Process(_process->processID);
 		tmp->resourceStatus = Occupied;
 		this->resourceList[_resourceType].freeNum--;
 		_process->addOccupiedResource(tmp);
@@ -220,10 +245,10 @@ Resource* ResourceManager::requireResource(ResourceType _resourceType, Process* 
 }
 
 int ResourceManager::releaseResource(ResourceType _resourceType, Process *_process) {
-	Resource* tmp = this->resourceList[_resourceType].getResource(_process);
+	Resource* tmp = this->resourceList[_resourceType].getResource(_process->processID);
 	if (tmp == nullptr)
 		return -1;
-	tmp->processControlBlock->removeOccupiedResource(tmp);
+	_process->removeOccupiedResource(tmp);
 	tmp->resourceStatus = Free;
 	tmp->processControlBlock = nullptr;
 	this->resourceList[_resourceType].freeNum++;
@@ -237,9 +262,9 @@ int ResourceManager::assignResource(ResourceType _resourceType) {
 	if (!(this->resourceList[_resourceType].freeNum > 0 && this->resourceList[_resourceType].waitNum > 0))
 		return -1;
 	if (this->resourceList[_resourceType].sysRequestQueue->length > 0) {
-		this->requireResource(_resourceType, this->resourceList[_resourceType].sysRequestQueue->popFirst());
+		this->requireResource(_resourceType, this->processManager->getProcess(this->resourceList[_resourceType].sysRequestQueue->popFirst()->processID));
 	} else {
-		this->requireResource(_resourceType, this->resourceList[_resourceType].userRequestQueue->popFirst());
+		this->requireResource(_resourceType, this->processManager->getProcess(this->resourceList[_resourceType].userRequestQueue->popFirst()->processID));
 	}
 	return 0;
 }
@@ -267,6 +292,29 @@ int ResourceManager::assignResource(ResourceType _resourceType, Process* _proces
 int ResourceManager::setProcessManager(ProcessManager *_processManager) {
 	this->processManager = _processManager;
 	return 0;
+}
+
+int ResourceManager::deWaitResource(ResourceType _resourceType, Process *_process) {
+	if (_process->priority == User) {
+		this->resourceList[_resourceType].userRequestQueue->remove(_process);
+	}
+	if (_process->priority == System) {
+		this->resourceList[_resourceType].sysRequestQueue->remove(_process);
+	}
+	this->resourceList[_resourceType].waitNum--;
+	return 0;
+}
+
+void ResourceManager::printFullInfo() {
+	for (int i = 0; i < RESOURCETYPENUM; i++) {
+		this->resourceList[i].printFullInfo();
+	}
+}
+
+void ResourceManager::printInfo() {
+	for (int i = 0; i < RESOURCETYPENUM; i++) {
+		this->resourceList[i].printInfo();
+	}
 }
 
 

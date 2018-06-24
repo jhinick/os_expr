@@ -28,6 +28,7 @@ public:
     void init();
     void printUsage();              // print usage of the system
     int runCommand(char* _cmd);     // run the command of _cmd
+	int source(char* _path);
     void exitSys();                 // exit the system
 };
 

@@ -17,6 +17,7 @@
 #include <cstdlib>
 #include <sstream>
 #include <cstring>
+#include <fstream>
 #include "error.h"
 #include "Error.h"
 #include "Process.h"
@@ -47,23 +48,23 @@ void UserInterface::run() {
 
 
 void UserInterface::printUsage() {
-//    int fd;
-//    char filename[] = "/Usage";
-//    fd = open(USAGEFILEDIR, O_RDONLY);
-//    if (fd == -1) {
-//        std::cout << "Error: Could not find usage text file." << std::endl;
-//        return;
-//    }
-//    char buf[BUF_SIZE];
-//    ssize_t temp;
-//    while ((temp = read(fd, buf, BUF_SIZE)) != 0) {
-//        fprintf(stdout, buf, temp);
-//    }
-    std::cout << "Usage: ...." << std::endl;
+    int fd;
+    char filename[] = "Usage.txt";
+    fd = open(USAGEFILEDIR, O_RDONLY);
+    if (fd == -1) {
+        std::cout << "Error: Could not find usage text file." << std::endl;
+        return;
+    }
+    char buf[BUF_SIZE];
+    ssize_t temp;
+    while ((temp = read(fd, buf, BUF_SIZE)) != 0) {
+        fprintf(stdout, buf, temp);
+    }
     return;
 }
 
 int UserInterface::runCommand(char* _cmd) {
+    std::string _cmdbk = _cmd;
     int state;
     char* tok = nullptr;
     std::vector<char*> tokens;
@@ -89,11 +90,15 @@ int UserInterface::runCommand(char* _cmd) {
      *  i scheduleAlgorithm             ; schedule in fifo mode
      *  #string                         ; print the string
      *  source sourceFile               ; run command in the file
+     *  req resourceType                ; call resource
+     *  rel resourceType                ; release resource
+     *  lr                              ; print resource info
+     *  ls -a                           ; print full resource info
      * */
 
     /* Print string. */
-    if (_cmd[0] == '#') {
-    	std::cout << _cmd;
+    if (_cmdbk[0] == '#') {
+    	std::cout << _cmdbk << std::endl;
         return 0;
     }
     /* cr -n processName */
@@ -161,6 +166,57 @@ int UserInterface::runCommand(char* _cmd) {
             return 0;
         }
     }
+    /* lr */
+    if (tokens.size() == 1 && strcmp(tokens[0], "lr") == 0) {
+        this->resourceManager->printInfo();
+        return 0;
+    }
+    /* lr -a*/
+    if (tokens.size() == 2 && strcmp(tokens[0], "lr") == 0 && strcmp(tokens[1], "-a") == 0) {
+        this->resourceManager->printFullInfo();
+        return 0;
+    }
+    /* source sourceFileName*/
+    if (tokens.size() == 2 && strcmp(tokens[0], "source") == 0) {
+    	this->source(tokens[1]);
+        return 0;
+    }
+    if (tokens.size() == 2 && strcmp(tokens[0], "req") == 0) {
+        ResourceType type;
+        if (strcmp(tokens[1], "0") == 0) {
+            type = resource0;
+        } else if (strcmp(tokens[1], "1") == 0) {
+            type = resource1;
+        } else if (strcmp(tokens[1], "2") == 0) {
+            type = resource2;
+        } else if (strcmp(tokens[1], "3") == 0) {
+            type = resource3;
+        } else {
+            std::cout << "Bad arg." << std::endl;
+            return -1;
+        }
+        this->resourceManager->requireResource(type, this->processManager->current);
+        return 0;
+    }
+    if (tokens.size() == 2 && strcmp(tokens[0], "rel") == 0) {
+        ResourceType type;
+        if (strcmp(tokens[1], "0") == 0) {
+            type = resource0;
+        } else if (strcmp(tokens[1], "1") == 0) {
+            type = resource1;
+        } else if (strcmp(tokens[1], "2") == 0) {
+            type = resource2;
+        } else if (strcmp(tokens[1], "3") == 0) {
+            type = resource3;
+        } else {
+            std::cout << "Bad arg." << std::endl;
+            return -1;
+        }
+        this->resourceManager->releaseResource(type, this->processManager->current);
+        return 0;
+    }
+    if (tokens.size() == 0)
+        return 0;
     std::cout << "Can't resolve command, input \"h\" for help." << std::endl;
 }
 
@@ -181,6 +237,21 @@ void UserInterface::init() {
         perror("Something goes wrong with this system.\n");
         exit(1);
     }
+}
+
+int UserInterface::source(char* _path) {
+	FILE* file = fopen(_path, "r");
+	if (file == nullptr) {
+	    std::cout << "Open file error" << std::endl;
+        return -1;
+	}
+    char* cmd = nullptr;
+    size_t len = 128;
+    while (getline(&cmd, &len, file) != -1) {
+        cmd[strlen(cmd) - 1] = '\0';
+        runCommand(cmd);
+    }
+	return 0;
 }
 
 

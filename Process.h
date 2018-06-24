@@ -3,7 +3,6 @@
 //
 
 
-
 #ifndef OS_EXPR_PROCESSCONTROLBLOCK_H
 #define OS_EXPR_PROCESSCONTROLBLOCK_H
 
@@ -11,13 +10,11 @@ class ResourceList;
 class Resource;
 class ResourceManager;
 
-
 #include <string>
 #include "Resource.h"
 
 #define PROCESS_STATE_NUM 4  /*Indicates how many states can a process be in in the system.*/
 enum    processState {Current, Ready, Blocked, Suspend};
-
 #define PRIOR_LEVEL_NUM   2 /*Indicates how many level exists in the system.*/
 enum    processPriority {User, System};
 
@@ -47,6 +44,7 @@ public:
 
 public:
     Process(int _processID, int _parentID, int _userID, processPriority _priority, std::string name);
+    Process(int _processID);
     ~Process();
     int setParent(Process* _process);
     int addChild(Process* _childProcess);
@@ -131,8 +129,11 @@ public:
     int initialize();
     void setResourceManager(ResourceManager* _resourceManager);
     int getProcessID(); /* Return the smallest available id in the id pool, return -1 on error.*/
+    int releaseProcessID(int _pid);
     int setCurrent(Process* _processControlBlock);
     Process* getProcess(Process* _process);
+    Process* getProcess(int _processID);
+    Process* getProcess(std::string _name);
     Process* getNext(getNextAlgorithm _getNextAlgrithom);
     ProcessControlBlockList* existProcess(Process* _process);
     int printProcessInfo();
@@ -140,8 +141,11 @@ public:
     int createProcess(std::string _name = "UnknownName", processPriority _processPriority = User);
     int killProcess(std::string _name);
     int killProcess(int _processID);
+    int killProcess(Process* _process);
     int blockProcess(Process* _process);
     int unBlockProcess(Process* _process);
+    int deWaitResource(Process* _process, ResourceType _resourceType);
+    int releaseResource(Process* _process, ResourceType _resourceType);
 
     /**
      * The way this function works:
@@ -151,7 +155,7 @@ public:
      * 4.   When there is no process to run, run init process.
      * @return  0 on success. nonzero on error.
      */
-    int schdule(schedule_algorithm, processState _processState);
+    int schedule(schedule_algorithm, processState _processState);
     /* We handle clock interrupt with round robin algorithm */
     int clockInterrupt(schedule_algorithm _schdule_algorithm = rr);
 };

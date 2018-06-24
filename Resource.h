@@ -52,10 +52,12 @@ public:
     int addResource(int _resourceID, ResourceType _resourceType);
     int append(Resource* _resource);
     /* Remoce but not delete*/
-    int remove(Resource* _resource);
+    Resource* remove(Resource* _resource);
     Resource* remove(ResourceType _resourceType);
     Resource* getResource(Resource* _resource);
+    Resource* findResource(int _resourceID);
     Resource* getResource(Process* _process);
+    Resource* getResource(int _processID);
     Resource* getResource(ResourceType _resourceType);
     Resource* firstFree();
     void printInfo();
@@ -80,7 +82,10 @@ public:
     int getResourceID();
     Resource* requireResource(ResourceType _resourceType, Process* _processControlBlockList);
     int releaseResource(ResourceType _resourceType, Process* _processControlBlock);
+    int deWaitResource(ResourceType _resourceType, Process* _process);
     int assignResource(ResourceType _resourceType);
+    void printFullInfo();
+    void printInfo();
     /* Assign a free resource to a waiting process*/
     int assignResource(ResourceType _resourceType, Process* _process);
 };

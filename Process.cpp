@@ -31,9 +31,7 @@ Process::Process(int _processID, int _parentID, int _userID,
     waitResourceList           = new ResourceList();
 }
 
-Process::~Process() {
-    // todo: remove the pcb and release its resource
-}
+Process::~Process() = default;
 
 int Process::addChild(Process* _childProcess) {
     if (this->child == nullptr) {
@@ -118,28 +116,32 @@ void Process::printFullInfo(){
 }
 
 int Process::addOccupiedResource(Resource *_resource) {
-	this->occupiedResourceList->append(_resource);
+	this->occupiedResourceList->append(new Resource(_resource->resourceID, _resource->resourceType));
 	return 0;
 }
 
 int Process::removeOccupiedResource(Resource *_resource) {
-	this->occupiedResourceList->remove(_resource);
+	delete this->occupiedResourceList->remove(_resource);
 	return 0;
 }
 
 int Process::addWaitResource(Resource *_resource) {
-	this->waitResourceList->append(_resource);
+	this->waitResourceList->append(new Resource(_resource->resourceID, _resource->resourceType));
 	return 0;
 }
 
 int Process::removeWaitResource(Resource *_resource) {
-	this->waitResourceList->remove(_resource);
+	delete this->waitResourceList->remove(_resource);
 	return 0;
 }
 
 int Process::setParent(Process *_process) {
 	this->parent = _process;
 	return 0;
+}
+
+Process::Process(int _processID) {
+	this->processID = _processID;
 }
 
 /*====================ProcessControlBlockList=============================*/
@@ -153,9 +155,7 @@ ProcessControlBlockList::ProcessControlBlockList() {
     this->tail->next = nullptr;
     this->length = 0;
 }
-
 ProcessControlBlockList::~ProcessControlBlockList() = default;
-
 int ProcessControlBlockList::append(Process* _node) {
     this->tail->previous->next = _node;
     _node->previous = this->tail->previous;
@@ -164,7 +164,6 @@ int ProcessControlBlockList::append(Process* _node) {
     this->length++;
     return 0;
 }
-
 int ProcessControlBlockList::insert(Process* _node) {
     _node->previous = this->head;
     _node->next = this->head->next;
@@ -173,7 +172,6 @@ int ProcessControlBlockList::insert(Process* _node) {
     this->length++;
     return 0;
 }
-
 Process* ProcessControlBlockList::getFirst(){
     if (this->length == 0) {
         return nullptr;
@@ -181,7 +179,6 @@ Process* ProcessControlBlockList::getFirst(){
         return this->head->next;
     }
 }
-
 Process* ProcessControlBlockList::popFirst(){
     if (this->length == 0) {
         return nullptr;
@@ -200,7 +197,6 @@ Process* ProcessControlBlockList::getLast(){
         return this->tail->previous;
     }
 }
-
 Process* ProcessControlBlockList::popLast(){
     if (this->length == 0) {
         return nullptr;
@@ -212,7 +208,6 @@ Process* ProcessControlBlockList::popLast(){
         return ret;
     }
 }
-
 int ProcessControlBlockList::printInfo() {
     if (this->length == 0) {
         return -1;
@@ -224,7 +219,6 @@ int ProcessControlBlockList::printInfo() {
     }
     return 0;
 }
-
 int ProcessControlBlockList::printFullInfo(){
     if (this->length == 0) {
         return -1;
@@ -236,7 +230,6 @@ int ProcessControlBlockList::printFullInfo(){
     }
     return 0;
 }
-
 Process* ProcessControlBlockList::searchByPid(int _processId) {
     Process* ret = this->head->next;
     while (ret != this->tail) {
@@ -245,7 +238,6 @@ Process* ProcessControlBlockList::searchByPid(int _processId) {
     }
     return nullptr;
 }
-
 Process* ProcessControlBlockList::searchByName(std::string _processName) {
     Process* ret = this->head->next;
     while (ret != this->tail) {
@@ -254,15 +246,12 @@ Process* ProcessControlBlockList::searchByName(std::string _processName) {
     }
     return nullptr;
 }
-
 bool ProcessControlBlockList::isEmpty() {
     return this->length == 0;
 }
-
 bool ProcessControlBlockList::isNotEmpty() {
     return this->length != 0;
 }
-
 int ProcessControlBlockList::remove(Process *_pcb) {
     Process* temp = this->head->next;
     while (temp != this->tail) {
@@ -278,15 +267,12 @@ int ProcessControlBlockList::remove(Process *_pcb) {
     }
     return Error::PCB_NOT_FOUND_IN_LIST;
 }
-
 int ProcessControlBlockList::removeByName(std::string _name) {
     return this->remove(this->searchByName(_name));
 }
-
 int ProcessControlBlockList::removeByPid(int _processId) {
     return this->remove(this->searchByPid(_processId));
 }
-
 Process* ProcessControlBlockList::getNext(schedule_algorithm _schedule_algorithm) {
     Process* ret = nullptr;
     switch (_schedule_algorithm) {
@@ -300,11 +286,9 @@ Process* ProcessControlBlockList::getNext(schedule_algorithm _schedule_algorithm
     }
     return ret;
 }
-
 bool ProcessControlBlockList::existProcess(Process *_process) {
     return this->getProcess(_process) != nullptr;
 }
-
 Process *ProcessControlBlockList::getProcess(Process *_process) {
 	Process* ret = this->head->next;
 	while (ret != this->tail) {
@@ -314,7 +298,6 @@ Process *ProcessControlBlockList::getProcess(Process *_process) {
 	}
     return nullptr;
 }
-
 Process *ProcessControlBlockList::takeOutProcess(Process *_process) {
 	Process* ret = this->head;
 	while (ret != this->tail) {
@@ -359,7 +342,7 @@ int ProcessManager::initialize(){
     this->init= new Process(this->getProcessID(), 0, SYS_UID, System, "Init");
     /* set init as current process.*/
     setCurrent(init);
-    this->resourceManager->init(3, 4, 5, 6);
+    this->resourceManager->init(1, 2, 3, 4);
     return 0;
 }
 
@@ -383,6 +366,8 @@ int ProcessManager::printProcessInfo() {
 }
 
 int ProcessManager::printProcessFullInfo() {
+	if (this->init != this->current)
+		this->init->printFullInfo();
     this->current->printFullInfo();
     for (int i = 0; i < PROCESS_STATE_NUM; i++) {
         for (int j = 0; j < PRIOR_LEVEL_NUM; j++) {
@@ -427,42 +412,24 @@ int ProcessManager::createProcess(std::string _name, processPriority _processPri
 }
 
 int ProcessManager::killProcess(std::string _name) {
-    int ret = Error::UNKNOWN_ERROR;
-    if (this->current->name == _name) {
-        // todo: schedule and
-        return ret;
-    } else {
-        for (int state = 0; state < PROCESS_STATE_NUM; state++) {
-            for (int priority = 0; priority < PRIOR_LEVEL_NUM; priority++) {
-                ret = this->list[state][priority].removeByName(_name);
-                if (ret == 0 || ret == Error::CANNOT_REMOVE_INIT)
-                    return ret;
-            }
-        }
-        return Error::PROCESS_NOT_FOUND;
-    }
+	Process* temp = this->getProcess(_name);
+	if (temp == this->init)
+		return -1;
+	if (temp == this->current)
+		this->schedule(fifo, Ready);
+	this->killProcess(temp);
 }
 
 int ProcessManager::killProcess(int _processID) {
-    int ret = Error::UNKNOWN_ERROR;
-    if (this->current->processID == _processID) {
-        // todo: when you want to kill current process
-        return ret;
-    } else {
-        for (int state = 0; state < PROCESS_STATE_NUM; state++) {
-            for (int priority = 0; priority < PRIOR_LEVEL_NUM; priority++) {
-                ret = this->list[state][priority].removeByPid(_processID);
-                if (ret == 0)
-                    return ret;
-                if (ret == Error::CANNOT_REMOVE_INIT)
-                    return ret;
-            }
-        }
-        return Error::PROCESS_NOT_FOUND;
-    }
+	Process* temp = this->getProcess(_processID);
+	if (temp == this->init)
+		return -1;
+	if (temp == this->current)
+		this->schedule(fifo, Ready);
+	this->killProcess(temp);
 }
 
-int ProcessManager::schdule(schedule_algorithm _schdule_algorithm, processState _processState) {
+int ProcessManager::schedule(schedule_algorithm _schdule_algorithm, processState _processState) {
     /* Put the PCB to the right list, if the process is init, don't do that.*/
     // todo :append or not?
     this->current->state = _processState;
@@ -484,12 +451,12 @@ int ProcessManager::schdule(schedule_algorithm _schdule_algorithm, processState 
 }
 
 int ProcessManager::clockInterrupt(schedule_algorithm _schedule_algorithm) {
-    this->schdule(_schedule_algorithm, Ready);
+    this->schedule(_schedule_algorithm, Ready);
 }
 
 int ProcessManager::blockProcess(Process *_process) {
 	if (_process->state == Current) {
-		schdule(fifo, Blocked);
+		schedule(fifo, Blocked);
 	}
 	if (_process->state == Blocked)
 		return -1;
@@ -526,6 +493,76 @@ ProcessControlBlockList *ProcessManager::existProcess(Process *_process) {
 
 void ProcessManager::setResourceManager(ResourceManager *_resourceManager) {
 	this->resourceManager = _resourceManager;
+}
+
+int ProcessManager::killProcess(Process *_process) {
+	this->releaseProcessID(_process->processID);
+	if (_process->childNumber == 1) {
+		this->killProcess(_process->child);
+	}
+	if (_process->childNumber >= 2) {
+		Process* temp1 = _process->child;
+		Process* temp2 = _process->child->nextBrother;
+		while (temp1 != nullptr) {
+			this->killProcess(temp1);
+			temp1 = temp2;
+			if (temp2 != nullptr)
+				temp2 = temp2->nextBrother;
+		}
+	}
+	for (int i = 0; i < _process->waitResourceList->length; i++) {
+		this->resourceManager->deWaitResource(_process->waitResourceList->head->next->resourceType, _process);
+		delete _process->waitResourceList->remove(_process->waitResourceList->head->next);
+	}
+	for (int j = 0; j < _process->occupiedResourceList->length; j++) {
+		this->resourceManager->releaseResource(_process->occupiedResourceList->head->next->resourceType, _process);
+		delete _process->occupiedResourceList->remove(_process->occupiedResourceList->head->next);
+	}
+	_process->parent->removeChild(_process);
+	delete _process;
+	return 0;
+}
+
+int ProcessManager::releaseProcessID(int _pid) {
+	if (this->pidPool[_pid] = ID_AVAILABLE)
+		return -1;
+	this->pidPool[_pid] = ID_AVAILABLE;
+	return 0;
+}
+
+int ProcessManager::deWaitResource(Process *_process, ResourceType _resourceType) {
+	_process->waitResourceList->remove(_resourceType);
+	this->resourceManager->deWaitResource(_resourceType, _process);
+	return 0;
+}
+
+int ProcessManager::releaseResource(Process *_process, ResourceType _resourceType) {
+	return 0;
+}
+
+Process *ProcessManager::getProcess(int _processID) {
+	Process* ret = nullptr;
+	for (int i = 0; i < PROCESS_STATE_NUM; i++) {
+		for (int j = 0; j < PRIOR_LEVEL_NUM; j++) {
+			if (this->list[i][j].searchByPid(_processID) != nullptr) {
+				ret = this->list[i][j].searchByPid(_processID);
+				return ret;
+			}
+		}
+	}
+	return nullptr;
+}
+
+Process *ProcessManager::getProcess(std::string _name) {
+	Process* ret = nullptr;
+	for (int i = 0; i < PROCESS_STATE_NUM; i++) {
+		for (int j = 0; j < PRIOR_LEVEL_NUM; j++) {
+			if (this->list[i][j].searchByName(_name) != nullptr) {
+				ret = this->list[i][j].searchByName(_name);
+				return ret;
+			}
+		}
+	}
 }
 
 
